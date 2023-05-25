@@ -55,7 +55,19 @@ resource "aws_instance" "ubuntu_MS" {
     "Name" = "UBUNTU-MS"
     "ENV"  = "Dev"
   }
-
+  /*
+  provisioner "file" {
+    source      = "./install_docker.sh"
+    destination = "/tmp/install_docker.sh"     
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file("./k_deployer")
+      host        = self.public_ip
+    }
+  }
+  */
+  
   # Remotely execute commands to install Java, Python, Jenkins
   provisioner "remote-exec" {
     # Type of connection to be established      
@@ -65,53 +77,12 @@ resource "aws_instance" "ubuntu_MS" {
       private_key = file("./k_deployer")
       host        = self.public_ip
     }
-
-    inline = [
-      "sudo apt update && sudo apt upgrade -y && sudo reboot -r"
+    
+    # script = "./install_docker.sh"
+    inline =  [
+      "sudo apt update && sudo apt install docker.io",
     ]
-
-    # inline = [
-    #   "sudo apt update && sudo apt upgrade ",
-    #   "sudo apt install -y python2",
-    #   "sudo apt install -y python3.8",
-    #   "sudo apt-get install -y openjdk-8-jre",
-    #   "wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -",
-    #   "sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ >  /etc/apt/sources.list.d/jenkins.list'",
-    #   "sudo apt-get update",
-    #   "sudo apt-get install -y jenkins",
-    #   "sudo systemctl enable jenkins",
-    #   "sudo systemctl start jenkins",
-    #   "sudo systemctl status jenkins",
-    #   "sudo apt-get install -y docker docker.io",
-    #   "sudo chmod 777 /var/run/docker.sock",
-    #   "sudo cat  /var/lib/jenkins/secrets/initialAdminPassword",
-    # ]
-
-    # inline = [
-    #   "sudo yum update -y",
-    #   "python --version",
-    #   "python3 --version",
-    #   "sudo apt install -y python3.8",
-    #   "sudo amazon-linux-extras install java-openjdk11 -y",
-    #   "sudo yum install java-1.8.0-openjdk",
-    #   "java -version",
-    #   "sudo wget -O /etc/yum.repos.d/jenkins.repo   https://pkg.jenkins.io/redhat-stable/jenkins.repo",
-    #   "sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key",
-    #   "sudo yum upgrade",
-    #   "sudo yum install jenkins -y",
-    #   "sudo systemctl enable jenkins",
-    #   "sudo systemctl start jenkins",
-    #   "sudo systemctl status jenkins",
-    #   "sudo yum remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc",
-    #   "sudo yum install -y yum-utils",
-    #   "sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo",
-    #   "sudo yum install docker-ce docker-ce-cli containerd.io docker-compose-plugin",
-    #   "yum list docker-ce --showduplicates | sort -r",
-    #   "",
-    #   "sudo apt-get install -y docker docker.io",
-    #   "sudo chmod 777 /var/run/docker.sock",
-    #   "sudo cat  /var/lib/jenkins/secrets/initialAdminPassword",
-    # ]
+    
 
   }
   depends_on = [aws_key_pair.k_deployer]
@@ -173,3 +144,13 @@ resource "aws_instance" "ubuntu_Node2" {
   depends_on = [aws_key_pair.k_deployer]
 }
 
+resource "aws_iam_user" "user" {
+  name = "test_commit_user"
+  path = "/"
+}
+
+resource "aws_iam_user_ssh_key" "user" {
+  username   = aws_iam_user.user.name
+  encoding   = "SSH"
+  public_key = aws_key_pair.k_deployer.public_key
+}
